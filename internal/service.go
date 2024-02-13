@@ -172,7 +172,7 @@ func (s service) ScheduledNotification(recipients []int) {
 		var eventsFiltered []entity.CalendarEvent
 		for _, e := range events {
 			if e.Currency == "EUR" || e.Currency == "GBP" || e.Currency == "USD" || e.Currency == "JPY" {
-				if e.Impact == "High" || e.Impact == "Medium" {
+				if e.Impact == "High" { //|| e.Impact == "Medium" {
 					eventsFiltered = append(eventsFiltered, e)
 				}
 			}
