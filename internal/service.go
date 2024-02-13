@@ -4,6 +4,7 @@ import (
 	"bot/conf"
 	"bot/entity"
 	"encoding/json"
+	"fmt"
 	"github.com/enescakir/emoji"
 	"github.com/go-co-op/gocron"
 	"io"
@@ -170,10 +171,24 @@ func (s service) ScheduledNotification(recipients []int) {
 		}
 
 		var eventsFiltered []entity.CalendarEvent
+		currentDate := time.Now()
+		// Add 1 day to the current date to get tomorrow's date
+		tomorrowDate := currentDate.AddDate(0, 0, 1)
 		for _, e := range events {
 			if e.Currency == "EUR" || e.Currency == "GBP" || e.Currency == "USD" || e.Currency == "JPY" {
 				if e.Impact == "High" { //|| e.Impact == "Medium" {
-					eventsFiltered = append(eventsFiltered, e)
+
+					parsedDate, err := time.Parse("2006-01-02 15:04:05", e.Date)
+					if err != nil {
+						fmt.Println("Error parsing date:", err)
+						return
+					}
+
+					if tomorrowDate.Year() == parsedDate.Year() &&
+						tomorrowDate.Month() == parsedDate.Month() &&
+						tomorrowDate.Day() == parsedDate.Day() {
+						eventsFiltered = append(eventsFiltered, e)
+					}
 				}
 			}
 		}
