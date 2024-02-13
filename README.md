@@ -1,1 +1,1 @@
-# Economic Calendar & News Bot
+# Economic Calendar & News Telegram Bot
