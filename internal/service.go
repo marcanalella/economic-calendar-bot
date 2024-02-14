@@ -219,7 +219,7 @@ func (s service) ScheduledNotification(recipients []int) {
 func (s service) Readyz(recipients []int) {
 	var message string
 	s2 := gocron.NewScheduler(time.UTC)
-	_, err := s2.Every(1).Day().At("23:01").Do(func() {
+	_, err := s2.Every(1).Day().At("22:59").Do(func() {
 		if time.Now().Weekday() != 6 {
 			message = "EconomicCalendarAndNewsBot Running " + emoji.BeamingFaceWithSmilingEyes.String()
 			for _, chatId := range recipients {
