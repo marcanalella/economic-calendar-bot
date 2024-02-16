@@ -17,7 +17,7 @@ import (
 )
 
 type Service interface {
-	GetEconomicCalendarForNextDay() ([]entity.CalendarEvent, error)
+	GetEconomicCalendarForNextDay(tomorrowDate time.Time) ([]entity.CalendarEvent, error)
 
 	PrepareEconomicCalendarForNextDayMessage([]entity.CalendarEvent) string
 
@@ -36,19 +36,15 @@ func NewService(config conf.Config) Service {
 	return service{config}
 }
 
-func (s service) GetEconomicCalendarForNextDay() ([]entity.CalendarEvent, error) {
+func (s service) GetEconomicCalendarForNextDay(tomorrowDate time.Time) ([]entity.CalendarEvent, error) {
 
 	u, err := url.Parse(s.config.EconomicCalendarUrl)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	currentDate := time.Now()
-	// Add 1 day to the current date to get tomorrow's date
-	tomorrowDate := currentDate.AddDate(0, 0, 1)
-	// Format the date as "2006-01-02"
 	formattedTomorrowDate := tomorrowDate.Format("2006-01-02")
-	formattedCurrentDate := currentDate.Format("2006-01-02")
+	formattedCurrentDate := time.Now().Format("2006-01-02")
 
 	q := u.Query()
 	q.Set("from", formattedCurrentDate)
@@ -109,12 +105,9 @@ func (s service) SendTextToTelegramChat(chatId int, text string) (string, error)
 	return bodyString, nil
 }
 
-func (s service) PrepareEconomicCalendarForNextDayMessage(events []entity.CalendarEvent) string {
+func (s service) PrepareEconomicCalendarForNextDayMessage(tomorrowDate time.Time, events []entity.CalendarEvent) string {
 
-	currentDate := time.Now()
-	tomorrowDate := currentDate.AddDate(0, 0, 1)
 	formattedTomorrowDate := tomorrowDate.Format("2006-01-02")
-
 	message := "Calendario Economico del " + formattedTomorrowDate + " \n\n"
 
 	if len(events) == 0 {
@@ -164,16 +157,16 @@ func (s service) ScheduledNotification(recipients []int) {
 	var message string
 	s1 := gocron.NewScheduler(time.UTC)
 	_, err := s1.Every(1).Day().At("22:00").Do(func() {
-		events, err := s.GetEconomicCalendarForNextDay()
+		// Add 1 day to the current date to get tomorrow's date
+		tomorrowDate := time.Now().AddDate(0, 0, 1)
+
+		events, err := s.GetEconomicCalendarForNextDay(tomorrowDate)
 		if err != nil {
 			log.Printf("got error when calling Economic Calendar API %s", err.Error())
 			return
 		}
 
 		var eventsFiltered []entity.CalendarEvent
-		currentDate := time.Now()
-		// Add 1 day to the current date to get tomorrow's date
-		tomorrowDate := currentDate.AddDate(0, 0, 1)
 		for _, e := range events {
 			if e.Currency == "EUR" || e.Currency == "GBP" || e.Currency == "USD" || e.Currency == "JPY" {
 				if e.Impact == "High" { //|| e.Impact == "Medium" {
@@ -193,7 +186,7 @@ func (s service) ScheduledNotification(recipients []int) {
 			}
 		}
 
-		message = s.PrepareEconomicCalendarForNextDayMessage(eventsFiltered)
+		message = s.PrepareEconomicCalendarForNextDayMessage(tomorrowDate, eventsFiltered)
 
 		for _, chatId := range recipients {
 			// Send the punchline back to Telegram
