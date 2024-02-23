@@ -214,17 +214,15 @@ func (s service) Readyz(recipients []telegram.Recipient) {
 	var message string
 	s2 := gocron.NewScheduler(time.UTC)
 	_, err := s2.Every(1).Day().At("21:59").Do(func() {
-		if time.Now().Weekday() != 6 {
-			message = "EconomicCalendarAndNewsBot Running " + emoji.BeamingFaceWithSmilingEyes.String()
-			for _, recipient := range recipients {
-				// Send the punchline back to Telegram
-				log.Printf("send to chatId, %s", strconv.Itoa(recipient.ChatId))
-				telegramResponseBody, err := s.SendTextToTelegramChat(recipient.ChatId, recipient.MessageThreadId, message)
-				if err != nil {
-					log.Printf("got error %s from telegram, response body is %s", err.Error(), telegramResponseBody)
-				} else {
-					log.Printf("turbina vestas infos successfully distributed to chat id %d", recipient.ChatId)
-				}
+		message = "EconomicCalendarAndNewsBot Running " + emoji.BeamingFaceWithSmilingEyes.String()
+		for _, recipient := range recipients {
+			// Send the punchline back to Telegram
+			log.Printf("send to chatId, %s", strconv.Itoa(recipient.ChatId))
+			telegramResponseBody, err := s.SendTextToTelegramChat(recipient.ChatId, recipient.MessageThreadId, message)
+			if err != nil {
+				log.Printf("got error %s from telegram, response body is %s", err.Error(), telegramResponseBody)
+			} else {
+				log.Printf("turbina vestas infos successfully distributed to chat id %d", recipient.ChatId)
 			}
 		}
 	})
