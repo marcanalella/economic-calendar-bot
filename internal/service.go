@@ -3,6 +3,7 @@ package internal
 import (
 	"bot/conf"
 	"bot/entity"
+	"bot/entity/telegram"
 	"encoding/json"
 	"fmt"
 	"github.com/enescakir/emoji"
@@ -19,13 +20,13 @@ import (
 type Service interface {
 	GetEconomicCalendarForNextDay(tomorrowDate time.Time) ([]entity.CalendarEvent, error)
 
-	PrepareEconomicCalendarForNextDayMessage([]entity.CalendarEvent) string
+	PrepareEconomicCalendarForNextDayMessage(tomorrowDate time.Time, events []entity.CalendarEvent) string
 
-	SendTextToTelegramChat(chatId int, text string) (string, error)
+	SendTextToTelegramChat(chatId int, messageThreadId int, text string) (string, error)
 
-	ScheduledNotification(recipients []int)
+	ScheduledNotification(recipients []telegram.Recipient)
 
-	Readyz(recipients []int)
+	Readyz(recipients []telegram.Recipient)
 }
 
 type service struct {
@@ -71,15 +72,15 @@ func (s service) GetEconomicCalendarForNextDay(tomorrowDate time.Time) ([]entity
 	return events, nil
 }
 
-func (s service) SendTextToTelegramChat(chatId int, text string) (string, error) {
+func (s service) SendTextToTelegramChat(chatId int, messageThreadId int, text string) (string, error) {
 
 	log.Printf("Sending %s to chat_id: %d", text, chatId)
 	response, err := http.PostForm(
 		s.config.TelegramApiBaseUrl+s.config.TelegramApiSendMessage,
 		url.Values{
 			"chat_id":           {strconv.Itoa(chatId)},
-			"message_thread_id": {"17"}, //TODO generalizzare
-			"via_bot":           {"@TurbinePeppeCanalellaBot"},
+			"message_thread_id": {strconv.Itoa(messageThreadId)},
+			"via_bot":           {"@EconomicCalendarAndNewsBot"},
 			"text":              {text},
 		})
 
@@ -153,7 +154,7 @@ func GetEmojiSemaphore(impact string) string {
 	}
 }
 
-func (s service) ScheduledNotification(recipients []int) {
+func (s service) ScheduledNotification(recipients []telegram.Recipient) {
 	var message string
 	s1 := gocron.NewScheduler(time.UTC)
 	_, err := s1.Every(1).Day().At("22:00").Do(func() {
@@ -188,14 +189,14 @@ func (s service) ScheduledNotification(recipients []int) {
 
 		message = s.PrepareEconomicCalendarForNextDayMessage(tomorrowDate, eventsFiltered)
 
-		for _, chatId := range recipients {
+		for _, recipient := range recipients {
 			// Send the punchline back to Telegram
-			log.Printf("send to chatId, %s", strconv.Itoa(chatId))
-			telegramResponseBody, err := s.SendTextToTelegramChat(chatId, message)
+			log.Printf("send to chatId, %s", strconv.Itoa(recipient.ChatId))
+			telegramResponseBody, err := s.SendTextToTelegramChat(recipient.ChatId, recipient.MessageThreadId, message)
 			if err != nil {
 				log.Printf("got error %s from telegram, response body is %s", err.Error(), telegramResponseBody)
 			} else {
-				log.Printf("economic calendar successfully distributed to chat id %d", chatId)
+				log.Printf("economic calendar successfully distributed to chat id %d", recipient.ChatId)
 			}
 		}
 
@@ -209,20 +210,20 @@ func (s service) ScheduledNotification(recipients []int) {
 	log.Printf("next run at: %s", t)
 }
 
-func (s service) Readyz(recipients []int) {
+func (s service) Readyz(recipients []telegram.Recipient) {
 	var message string
 	s2 := gocron.NewScheduler(time.UTC)
 	_, err := s2.Every(1).Day().At("21:59").Do(func() {
 		if time.Now().Weekday() != 6 {
 			message = "EconomicCalendarAndNewsBot Running " + emoji.BeamingFaceWithSmilingEyes.String()
-			for _, chatId := range recipients {
+			for _, recipient := range recipients {
 				// Send the punchline back to Telegram
-				log.Printf("send to chatId, %s", strconv.Itoa(chatId))
-				telegramResponseBody, err := s.SendTextToTelegramChat(chatId, message)
+				log.Printf("send to chatId, %s", strconv.Itoa(recipient.ChatId))
+				telegramResponseBody, err := s.SendTextToTelegramChat(recipient.ChatId, recipient.MessageThreadId, message)
 				if err != nil {
 					log.Printf("got error %s from telegram, response body is %s", err.Error(), telegramResponseBody)
 				} else {
-					log.Printf("turbina vestas infos successfully distributed to chat id %d", chatId)
+					log.Printf("turbina vestas infos successfully distributed to chat id %d", recipient.ChatId)
 				}
 			}
 		}

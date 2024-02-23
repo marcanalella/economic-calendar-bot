@@ -1,6 +1,7 @@
 package conf
 
 import (
+	"bot/entity/telegram"
 	"encoding/json"
 	"log"
 	"os"
@@ -29,8 +30,8 @@ func Load() (Config, error) {
 	return config, err
 }
 
-func LoadRecipients() ([]int, error) {
-	var arr []int
+func LoadRecipients() ([]telegram.Recipient, error) {
+	var arr []telegram.Recipient
 	recipientsFile, err := os.Open("recipients.json")
 	defer func(configFile *os.File) {
 		err := configFile.Close()
