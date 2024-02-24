@@ -222,7 +222,7 @@ func (s service) Readyz(recipients []telegram.Recipient) {
 			if err != nil {
 				log.Printf("got error %s from telegram, response body is %s", err.Error(), telegramResponseBody)
 			} else {
-				log.Printf("turbina vestas infos successfully distributed to chat id %d", recipient.ChatId)
+				log.Printf("Readyz successfully distributed to chat id %d", recipient.ChatId)
 			}
 		}
 	})
