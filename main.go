@@ -45,8 +45,8 @@ func buildHandler(cfg conf.Config) http.Handler {
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowCredentials: true,
-		AllowedHeaders:   []string{"Authorization,Content-Type"},
-		AllowedMethods:   []string{"GET,POST,PUT,DELETE,PATCH,OPTIONS"},
+		AllowedHeaders:   []string{"Authorization", "Content-Type"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
 	})
 
 	routerGroup := router.PathPrefix("/api/v1").Subrouter()
