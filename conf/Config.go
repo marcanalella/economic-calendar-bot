@@ -8,15 +8,18 @@ import (
 )
 
 type Config struct {
-	Address                string `json:"address"`
-	Port                   string `json:"port"`
-	TelegramApiBaseUrl     string `json:"telegram_api_base_url"`
-	TelegramApiSendMessage string `json:"telegram_api_send_message"`
-	EconomicCalendarUrl    string `json:"economic_calendar_url"`
-	EconomicCalendarApyKey string `json:"economic_calendar_apy_key"`
-	SpreadsheetId          string `json:"spread_sheet_id"`
-	ReadRange              string `json:"read_range"`
-	WriteRange             string `json:"write_range"`
+	Address                  string `json:"address"`
+	Port                     string `json:"port"`
+	TelegramApiBaseUrl       string `json:"telegram_api_base_url"`
+	TelegramApiSendMessage   string `json:"telegram_api_send_message"`
+	EconomicCalendarUrl      string `json:"economic_calendar_url"`
+	EconomicCalendarApyKey   string `json:"economic_calendar_apy_key"`
+	FinancialModelingPrepUrl string `json:"financial_modeling_prep_url"`
+	SheetId                  int    `json:"sheet_id"`
+	SpreadsheetId            string `json:"spread_sheet_id"`
+	ReadRange                string `json:"read_range"`
+	WriteRange               string `json:"write_range"`
+	KeyFile                  string `json:"key_file"`
 }
 
 func Load() (Config, error) {

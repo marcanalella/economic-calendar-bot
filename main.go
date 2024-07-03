@@ -3,10 +3,15 @@ package main
 import (
 	"bot/conf"
 	"bot/internal"
+	"context"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/option"
+	"google.golang.org/api/sheets/v4"
 	"log"
 	"net/http"
+	"os"
 )
 
 func main() {
@@ -21,6 +26,24 @@ func main() {
 		log.Fatalf("could not decode recipients %s\n", err.Error())
 	}
 
+	var sheetsService *sheets.Service
+
+	creeds, err := os.ReadFile(cfg.KeyFile)
+	if err != nil {
+		log.Fatalf("Unable to read credentials file: %v", err)
+	}
+
+	config, err := google.JWTConfigFromJSON(creeds, sheets.SpreadsheetsScope)
+	if err != nil {
+		log.Fatalf("Unable to create JWT config: %v", err)
+	}
+
+	client := config.Client(context.Background())
+	sheetsService, err = sheets.NewService(context.Background(), option.WithHTTPClient(client))
+	if err != nil {
+		log.Fatalf("Unable to create Google Sheets service: %v", err)
+	}
+
 	server := &http.Server{
 		Addr:    cfg.Address + ":" + cfg.Port,
 		Handler: buildHandler(cfg),
@@ -28,7 +51,13 @@ func main() {
 
 	scheduler := internal.NewService(cfg)
 	scheduler.Readyz(recipients)
-	scheduler.ScheduledNotification(recipients)
+	//CALENDAR NEWS SCHEDULER
+	scheduler.ScheduledNewsNotification(recipients)
+
+	//XAU SCHEDULER
+	scheduler.ScheduledXauNotification(recipients, cfg.SpreadsheetId, cfg.ReadRange, sheetsService)
+	scheduler.ScheduledXauSheetUpdate(recipients, cfg.SpreadsheetId, cfg.WriteRange, cfg.SheetId, cfg.FinancialModelingPrepUrl, sheetsService)
+
 	select {}
 
 	log.Println("Listening ", server.Addr)

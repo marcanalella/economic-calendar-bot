@@ -8,23 +8,30 @@ import (
 	"fmt"
 	"github.com/enescakir/emoji"
 	"github.com/go-co-op/gocron"
+	"google.golang.org/api/sheets/v4"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
 type Service interface {
 	GetEconomicCalendarForNextDay(tomorrowDate time.Time) ([]entity.CalendarEvent, error)
 
+	GetXauRateFromYesterday(url string) (entity.FmpResponse, error)
+
 	PrepareEconomicCalendarForNextDayMessage(tomorrowDate time.Time, events []entity.CalendarEvent) string
 
 	SendTextToTelegramChat(chatId int, messageThreadId int, text string) (string, error)
 
-	ScheduledNotification(recipients []telegram.Recipient)
+	ScheduledNewsNotification(recipients []telegram.Recipient)
+
+	ScheduledXauNotification(recipients []telegram.Recipient, spreadsheetId string, readRange string, sheetService *sheets.Service)
+
+	ScheduledXauSheetUpdate(recipients []telegram.Recipient, spreadsheetId string, readRange string, sheetId int, url string, sheetService *sheets.Service)
 
 	Readyz(recipients []telegram.Recipient)
 }
@@ -72,6 +79,30 @@ func (s service) GetEconomicCalendarForNextDay(tomorrowDate time.Time) ([]entity
 	return events, nil
 }
 
+func (s service) GetXauRateFromYesterday(providerUrl string) (entity.FmpResponse, error) {
+
+	u, err := url.Parse(providerUrl)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	response, err := http.Get(u.String())
+	if err != nil {
+		log.Printf("error while calling Economic Calendar %s", err.Error())
+		return entity.FmpResponse{}, err
+	}
+	log.Println(response.Status)
+
+	var fmpResponse entity.FmpResponse
+	body, err := io.ReadAll(response.Body)
+	if err := json.Unmarshal(body, &fmpResponse); err != nil {
+		log.Printf("error while parsing Economic Calendar response %s", err.Error())
+		panic(err)
+	}
+
+	return fmpResponse, nil
+}
+
 func (s service) SendTextToTelegramChat(chatId int, messageThreadId int, text string) (string, error) {
 
 	log.Printf("Sending %s to chat_id: %d", text, chatId)
@@ -95,7 +126,7 @@ func (s service) SendTextToTelegramChat(chatId int, messageThreadId int, text st
 		}
 	}(response.Body)
 
-	bodyBytes, err := ioutil.ReadAll(response.Body)
+	bodyBytes, err := io.ReadAll(response.Body)
 	if err != nil {
 		log.Printf("error in parsing telegram answer %s", err.Error())
 		return "", err
@@ -104,6 +135,16 @@ func (s service) SendTextToTelegramChat(chatId int, messageThreadId int, text st
 	log.Printf("Body of Telegram Response: %s", bodyString)
 
 	return bodyString, nil
+}
+
+func (s service) PrepareXauMessage(short float64, long float64) string {
+	return emoji.Butter.String() + " XAUUSD " + time.Now().Weekday().String() + "statistics \n\n" +
+		"LONG " + strconv.FormatFloat(long, 'f', -1, 64) + "% \n\n" +
+		"SHORT " + strconv.FormatFloat(short, 'f', -1, 64) + "% \n\n"
+}
+
+func (s service) PrepareXauUpdateMessage() string {
+	return emoji.Butter.String() + "XAUUSD DAILY FILE UPDATED :) "
 }
 
 func (s service) PrepareEconomicCalendarForNextDayMessage(tomorrowDate time.Time, events []entity.CalendarEvent) string {
@@ -154,7 +195,7 @@ func GetEmojiSemaphore(impact string) string {
 	}
 }
 
-func (s service) ScheduledNotification(recipients []telegram.Recipient) {
+func (s service) ScheduledNewsNotification(recipients []telegram.Recipient) {
 	var message string
 	s1 := gocron.NewScheduler(time.UTC)
 	_, err := s1.Every(1).Day().At("22:00").Do(func() {
@@ -197,6 +238,163 @@ func (s service) ScheduledNotification(recipients []telegram.Recipient) {
 				log.Printf("got error %s from telegram, response body is %s", err.Error(), telegramResponseBody)
 			} else {
 				log.Printf("economic calendar successfully distributed to chat id %d", recipient.ChatId)
+			}
+		}
+
+		message = ""
+	})
+	s1.StartAsync()
+	if err != nil {
+		log.Printf("error creating job: %v", err)
+	}
+	_, t := s1.NextRun()
+	log.Printf("next run at: %s", t)
+}
+
+func (s service) ScheduledXauSheetUpdate(recipients []telegram.Recipient, spreadsheetId string,
+	writeRange string, sheetId int, url string, sheetService *sheets.Service) {
+	var message string
+	s1 := gocron.NewScheduler(time.UTC)
+	_, err := s1.Every(1).Day().Do(func() {
+		if time.Now().Weekday() != 0 {
+
+			insertRequest := &sheets.Request{
+				InsertDimension: &sheets.InsertDimensionRequest{
+					Range: &sheets.DimensionRange{
+						SheetId:    int64(sheetId),
+						Dimension:  "ROWS",
+						StartIndex: 1,
+						EndIndex:   2,
+					},
+					InheritFromBefore: false,
+				},
+			}
+
+			batchUpdateRequest := &sheets.BatchUpdateSpreadsheetRequest{
+				Requests: []*sheets.Request{insertRequest},
+			}
+
+			_, err := sheetService.Spreadsheets.BatchUpdate(spreadsheetId, batchUpdateRequest).Do()
+			if err != nil {
+				log.Fatalf("Unable to insert row: %v", err)
+			}
+
+			response, err := s.GetXauRateFromYesterday(url)
+			if err != nil {
+				log.Fatalf("Unable to get xau data: %v", err)
+			}
+			yesterday := time.Now().AddDate(0, 0, -1)
+			formattedYesterday := yesterday.Format("02/01/2006")
+
+			// Definisci i dati da inserire
+			values := []interface{}{
+				formattedYesterday,
+				response.Historical[1].Close,
+				response.Historical[1].Open,
+				response.Historical[1].High,
+				response.Historical[1].Low,
+				response.Historical[1].Volume,
+				0,
+				//response.Historical[1].ChangePercent, //TODO
+				"@EconomicCalendarAndNewsBot"}
+
+			valueRange := &sheets.ValueRange{
+				Range:  writeRange,
+				Values: [][]interface{}{values},
+			}
+
+			// Inserisci i dati nella nuova riga
+			_, err = sheetService.Spreadsheets.Values.Update(spreadsheetId, valueRange.Range, valueRange).ValueInputOption("RAW").Do()
+			if err != nil {
+				log.Fatalf("Unable to update data: %v", err)
+			}
+
+			fmt.Println("Riga inserita con successo alla seconda posizione")
+
+			message = s.PrepareXauUpdateMessage()
+			log.Printf(message)
+			for _, recipient := range recipients {
+				// Send the punchline back to Telegram
+				log.Printf("send to chatId, %s", strconv.Itoa(recipient.ChatId))
+				telegramResponseBody, err := s.SendTextToTelegramChat(recipient.ChatId, recipient.MessageThreadId, message)
+				if err != nil {
+					log.Printf("got error %s from telegram, response body is %s", err.Error(), telegramResponseBody)
+				} else {
+					log.Printf("xau history successfully distributed to chat id %d", recipient.ChatId)
+				}
+			}
+
+			message = ""
+		}
+	})
+	s1.StartAsync()
+	if err != nil {
+		log.Printf("error creating job: %v", err)
+	}
+	_, t := s1.NextRun()
+	log.Printf("next run at: %s", t)
+}
+
+func (s service) ScheduledXauNotification(
+	recipients []telegram.Recipient,
+	spreadsheetId string, readRange string, sheetService *sheets.Service) {
+	var message string
+	s1 := gocron.NewScheduler(time.UTC)
+	_, err := s1.Every(1).Day().Do(func() {
+
+		resp, err := sheetService.Spreadsheets.Values.Get(spreadsheetId, readRange).Do()
+		if err != nil {
+			log.Fatalf("Unable to retrieve data from sheet: %v", err)
+		}
+
+		total := 0
+		long := 0
+		short := 0
+
+		for i, row := range resp.Values {
+
+			if i == 0 {
+				continue
+			}
+
+			dateStr := row[0].(string)
+			closeStr := row[1].(string)
+			openStr := row[2].(string)
+
+			date, err := time.Parse("02/01/2006", dateStr)
+			if err != nil {
+				log.Printf("%v", dateStr)
+				log.Printf("Unable to parse date: %v", err)
+			}
+
+			closeFloat, _ := strconv.ParseFloat(strings.TrimSpace(closeStr), 64)
+			openFloat, _ := strconv.ParseFloat(strings.TrimSpace(openStr), 64)
+
+			// Controlla se è oggi
+			if date.Weekday() == time.Now().Weekday() {
+				if openFloat > closeFloat {
+					short++
+				} else {
+					long++
+				}
+			}
+		}
+
+		total = long + short
+
+		longPer := (float64((long) / total)) * 100
+		shortPer := (float64((short) / total)) * 100
+
+		message = s.PrepareXauMessage(longPer, shortPer)
+		log.Printf(message)
+		for _, recipient := range recipients {
+			// Send the punchline back to Telegram
+			log.Printf("send to chatId, %s", strconv.Itoa(recipient.ChatId))
+			telegramResponseBody, err := s.SendTextToTelegramChat(recipient.ChatId, recipient.MessageThreadId, message)
+			if err != nil {
+				log.Printf("got error %s from telegram, response body is %s", err.Error(), telegramResponseBody)
+			} else {
+				log.Printf("xau history successfully distributed to chat id %d", recipient.ChatId)
 			}
 		}
 
