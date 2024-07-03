@@ -14,6 +14,9 @@ type Config struct {
 	TelegramApiSendMessage string `json:"telegram_api_send_message"`
 	EconomicCalendarUrl    string `json:"economic_calendar_url"`
 	EconomicCalendarApyKey string `json:"economic_calendar_apy_key"`
+	SpreadsheetId          string `json:"spread_sheet_id"`
+	ReadRange              string `json:"read_range"`
+	WriteRange             string `json:"write_range"`
 }
 
 func Load() (Config, error) {
