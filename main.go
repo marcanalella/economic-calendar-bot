@@ -64,11 +64,10 @@ func main() {
 	scheduler.ScheduledXauNotification(recipients, cfg.SpreadsheetId, cfg.ReadRange, sheetsService)
 	scheduler.ScheduledXauSheetUpdate(recipients, cfg.SpreadsheetId, cfg.WriteRange, cfg.SheetId, cfg.FinancialModelingPrepUrl, sheetsService)
 
-	select {}
-
 	log.Println("Listening ", server.Addr)
 	err = server.ListenAndServe()
 	log.Fatalln(err)
+
 }
 
 func buildHandler(cfg conf.Config) http.Handler {

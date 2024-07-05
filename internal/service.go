@@ -25,6 +25,10 @@ type Service interface {
 
 	PrepareEconomicCalendarForNextDayMessage(tomorrowDate time.Time, events []entity.CalendarEvent) string
 
+	PrepareStartMessageToTelegramChat() string
+
+	PrepareCommandNotFoundMessageToTelegramChat() string
+
 	SendTextToTelegramChat(chatId int, messageThreadId int, text string) (string, error)
 
 	ScheduledNewsNotification(recipients []telegram.Recipient)
@@ -437,4 +441,18 @@ func (s service) Readyz(recipients []telegram.Recipient) {
 	}
 	_, t := s2.NextRun()
 	log.Printf("next run at: %s", t)
+}
+
+func (s service) PrepareStartMessageToTelegramChat() string {
+	return emoji.WavingHand.String() + " Hi! @EconomicCalendarAndNewsBot here!" + "\n\n" +
+		emoji.CheckMarkButton.String() + "Do you want " + emoji.Butter.String() + " some XAUUSD statistcs? " + emoji.RelievedFace.String() + "\n\n" +
+		emoji.CheckMarkButton.String() + "Check the command list!" + "\n\n" +
+		emoji.SmallOrangeDiamond.String() + "Made by @mariocanalella"
+}
+
+func (s service) PrepareCommandNotFoundMessageToTelegramChat() string {
+	return emoji.WavingHand.String() + " Hi! @EconomicCalendarAndNewsBot here!" + "\n\n" +
+		emoji.CheckMarkButton.String() + "Command not found " + emoji.SadButRelievedFace.String() + "\n\n" +
+		emoji.CheckMarkButton.String() + "Check the command list!" + "\n\n" +
+		emoji.SmallOrangeDiamond.String() + "Made by @mariocanalella"
 }
