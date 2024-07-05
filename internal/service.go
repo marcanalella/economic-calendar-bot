@@ -138,9 +138,9 @@ func (s service) SendTextToTelegramChat(chatId int, messageThreadId int, text st
 }
 
 func (s service) PrepareXauMessage(short float64, long float64) string {
-	return emoji.Butter.String() + " XAUUSD " + time.Now().Weekday().String() + "statistics \n\n" +
-		"LONG " + strconv.FormatFloat(long, 'f', -1, 64) + "% \n\n" +
-		"SHORT " + strconv.FormatFloat(short, 'f', -1, 64) + "% \n\n"
+	return emoji.Butter.String() + " XAUUSD " + time.Now().Weekday().String() + " statistics: \n\n" +
+		emoji.GreenCircle.String() + " LONG " + strconv.FormatFloat(long, 'f', -1, 32) + "% \n\n" +
+		emoji.RedCircle.String() + " SHORT " + strconv.FormatFloat(short, 'f', -1, 32) + "% \n\n"
 }
 
 func (s service) PrepareXauUpdateMessage() string {
@@ -255,7 +255,7 @@ func (s service) ScheduledXauSheetUpdate(recipients []telegram.Recipient, spread
 	writeRange string, sheetId int, url string, sheetService *sheets.Service) {
 	var message string
 	s1 := gocron.NewScheduler(time.UTC)
-	_, err := s1.Every(1).Day().Do(func() {
+	_, err := s1.Every(1).Day().At("00:30").Do(func() {
 		if time.Now().Weekday() != 0 {
 
 			insertRequest := &sheets.Request{
@@ -294,8 +294,7 @@ func (s service) ScheduledXauSheetUpdate(recipients []telegram.Recipient, spread
 				response.Historical[1].High,
 				response.Historical[1].Low,
 				response.Historical[1].Volume,
-				0,
-				//response.Historical[1].ChangePercent, //TODO
+				0, //response.Historical[1].ChangePercent, //TODO
 				"@EconomicCalendarAndNewsBot"}
 
 			valueRange := &sheets.ValueRange{
@@ -340,65 +339,73 @@ func (s service) ScheduledXauNotification(
 	spreadsheetId string, readRange string, sheetService *sheets.Service) {
 	var message string
 	s1 := gocron.NewScheduler(time.UTC)
-	_, err := s1.Every(1).Day().Do(func() {
+	_, err := s1.Every(1).Day().At("00:28").Do(func() {
 
-		resp, err := sheetService.Spreadsheets.Values.Get(spreadsheetId, readRange).Do()
-		if err != nil {
-			log.Fatalf("Unable to retrieve data from sheet: %v", err)
-		}
+		if time.Now().Weekday() != 6 || time.Now().Weekday() != 0 {
 
-		total := 0
-		long := 0
-		short := 0
-
-		for i, row := range resp.Values {
-
-			if i == 0 {
-				continue
-			}
-
-			dateStr := row[0].(string)
-			closeStr := row[1].(string)
-			openStr := row[2].(string)
-
-			date, err := time.Parse("02/01/2006", dateStr)
+			resp, err := sheetService.Spreadsheets.Values.Get(spreadsheetId, readRange).Do()
 			if err != nil {
-				log.Printf("%v", dateStr)
-				log.Printf("Unable to parse date: %v", err)
+				log.Fatalf("Unable to retrieve data from sheet: %v", err)
 			}
 
-			closeFloat, _ := strconv.ParseFloat(strings.TrimSpace(closeStr), 64)
-			openFloat, _ := strconv.ParseFloat(strings.TrimSpace(openStr), 64)
+			total := 0
+			long := 0
+			short := 0
 
-			// Controlla se è oggi
-			if date.Weekday() == time.Now().Weekday() {
-				if openFloat > closeFloat {
-					short++
-				} else {
-					long++
+			for i, row := range resp.Values {
+
+				if i == 0 {
+					continue
+				}
+
+				dateStr := row[0].(string)
+				closeStr := row[1].(string)
+				openStr := row[2].(string)
+
+				date, err := time.Parse("02/01/2006", dateStr)
+				if err != nil {
+					log.Printf("%v", dateStr)
+					log.Printf("Unable to parse date: %v", err)
+				}
+
+				closeStr = strings.ReplaceAll(closeStr, ".", "")
+				openStr = strings.ReplaceAll(openStr, ".", "")
+				closeStr = strings.ReplaceAll(closeStr, ",", ".")
+				openStr = strings.ReplaceAll(openStr, ",", ".")
+
+				closeFloat, _ := strconv.ParseFloat(strings.TrimSpace(closeStr), 64)
+				openFloat, _ := strconv.ParseFloat(strings.TrimSpace(openStr), 64)
+
+				// Controlla se è oggi
+				if date.Weekday() == time.Now().Weekday() {
+					if openFloat > closeFloat {
+						short++
+					} else {
+						long++
+					}
 				}
 			}
-		}
 
-		total = long + short
+			total = long + short
 
-		longPer := (float64((long) / total)) * 100
-		shortPer := (float64((short) / total)) * 100
+			longPer := (float64(long) / float64(total)) * 100
+			shortPer := (float64(short) / float64(total)) * 100
 
-		message = s.PrepareXauMessage(longPer, shortPer)
-		log.Printf(message)
-		for _, recipient := range recipients {
-			// Send the punchline back to Telegram
-			log.Printf("send to chatId, %s", strconv.Itoa(recipient.ChatId))
-			telegramResponseBody, err := s.SendTextToTelegramChat(recipient.ChatId, recipient.MessageThreadId, message)
-			if err != nil {
-				log.Printf("got error %s from telegram, response body is %s", err.Error(), telegramResponseBody)
-			} else {
-				log.Printf("xau history successfully distributed to chat id %d", recipient.ChatId)
+			message = s.PrepareXauMessage(longPer, shortPer)
+			log.Printf(message)
+			for _, recipient := range recipients {
+				// Send the punchline back to Telegram
+				log.Printf("send to chatId, %s", strconv.Itoa(recipient.ChatId))
+				telegramResponseBody, err := s.SendTextToTelegramChat(recipient.ChatId, recipient.MessageThreadId, message)
+				if err != nil {
+					log.Printf("got error %s from telegram, response body is %s", err.Error(), telegramResponseBody)
+				} else {
+					log.Printf("xau history successfully distributed to chat id %d", recipient.ChatId)
+				}
 			}
-		}
 
-		message = ""
+			message = ""
+		}
 	})
 	s1.StartAsync()
 	if err != nil {
