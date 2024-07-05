@@ -30,10 +30,9 @@ func HandleTelegramWebHook(service Service) func(w http.ResponseWriter, r *http.
 		command := getCommand(update.Message.Text)
 		switch command {
 		case 0:
-
-			message = service.PrepareStartMessageToTelegramChat()
+			message = service.PrepareCommandNotFoundMessageToTelegramChat()
 			log.Printf("send to chatId, %s", strconv.Itoa(update.Message.Chat.Id))
-			telegramResponseBody, err := service.SendTextToTelegramChat(update.Message.Chat.Id, message)
+			telegramResponseBody, err := service.SendTextToTelegramChat(update.Message.Chat.Id, 0, message)
 			if err != nil {
 				log.Printf("got error %s from telegram, response body is %s", err.Error(), telegramResponseBody)
 			} else {
@@ -43,7 +42,7 @@ func HandleTelegramWebHook(service Service) func(w http.ResponseWriter, r *http.
 		case 1:
 			message = service.PrepareStartMessageToTelegramChat()
 			log.Printf("send to chatId, %s", strconv.Itoa(update.Message.Chat.Id))
-			telegramResponseBody, err := service.SendTextToTelegramChat(update.Message.Chat.Id, message)
+			telegramResponseBody, err := service.SendTextToTelegramChat(update.Message.Chat.Id, 0, message)
 			if err != nil {
 				log.Printf("got error %s from telegram, response body is %s", err.Error(), telegramResponseBody)
 			} else {
