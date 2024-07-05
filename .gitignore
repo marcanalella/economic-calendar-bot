@@ -1,6 +1,7 @@
  *.iml
 *.ipr
 *.iws
+*.DS_store
 .idea/
 /build/
 /dist/
