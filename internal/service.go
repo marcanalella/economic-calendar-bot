@@ -445,14 +445,12 @@ func (s service) Readyz(recipients []telegram.Recipient) {
 
 func (s service) PrepareStartMessageToTelegramChat() string {
 	return emoji.WavingHand.String() + " Hi! @EconomicCalendarAndNewsBot here!" + "\n\n" +
-		emoji.CheckMarkButton.String() + "Do you want " + emoji.Butter.String() + " some XAUUSD statistcs? " + emoji.RelievedFace.String() + "\n\n" +
-		emoji.CheckMarkButton.String() + "Check the command list!" + "\n\n" +
-		emoji.SmallOrangeDiamond.String() + "Made by @mariocanalella"
+		"Do you want " + emoji.Butter.String() + " some XAUUSD statistcs? " + emoji.RelievedFace.String() + "\n\n" +
+		"Check the command list! " + emoji.CheckMarkButton.String() + "\n\n" +
+		"Made by @mariocanalella" + emoji.Sparkles.String()
 }
 
 func (s service) PrepareCommandNotFoundMessageToTelegramChat() string {
-	return emoji.WavingHand.String() + " Hi! @EconomicCalendarAndNewsBot here!" + "\n\n" +
-		emoji.CheckMarkButton.String() + "Command not found " + emoji.SadButRelievedFace.String() + "\n\n" +
-		emoji.CheckMarkButton.String() + "Check the command list!" + "\n\n" +
-		emoji.SmallOrangeDiamond.String() + "Made by @mariocanalella"
+	return emoji.CrossMark.String() + "Command not found " + emoji.SadButRelievedFace.String() + "\n\n" +
+		"Check the command list! " + emoji.Eyes.String()
 }
