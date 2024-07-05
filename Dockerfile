@@ -1,4 +1,4 @@
-FROM golang:1.22.4
+FROM golang:1.22.5
 
 # Set necessary environmet variables needed for our image
 ENV GO111MODULE=on \
