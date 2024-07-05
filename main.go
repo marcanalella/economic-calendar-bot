@@ -52,7 +52,8 @@ func main() {
 	scheduler := internal.NewService(cfg)
 	scheduler.Readyz(recipients)
 	//CALENDAR NEWS SCHEDULER
-	scheduler.ScheduledNewsNotification(recipients)
+	//TODO API NOT VALID ANYMORE - FIND ANOTHER FREE SERVICE
+	//scheduler.ScheduledNewsNotification(recipients)
 
 	//XAU SCHEDULER
 	scheduler.ScheduledXauNotification(recipients, cfg.SpreadsheetId, cfg.ReadRange, sheetsService)
