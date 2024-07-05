@@ -44,8 +44,13 @@ func main() {
 		log.Fatalf("Unable to create Google Sheets service: %v", err)
 	}
 
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = cfg.Port
+	}
+
 	server := &http.Server{
-		Addr:    cfg.Address + ":" + cfg.Port,
+		Addr:    cfg.Address + ":" + port,
 		Handler: buildHandler(cfg),
 	}
 
