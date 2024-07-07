@@ -290,16 +290,29 @@ func (s service) ScheduledXauSheetUpdate(recipients []telegram.Recipient, spread
 			yesterday := time.Now().AddDate(0, 0, -1)
 			formattedYesterday := yesterday.Format("02/01/2006")
 
+			var values []interface{}
 			// Definisci i dati da inserire
-			values := []interface{}{
-				formattedYesterday,
-				response.Historical[1].Close,
-				response.Historical[1].Open,
-				response.Historical[1].High,
-				response.Historical[1].Low,
-				response.Historical[1].Volume,
-				0, //response.Historical[1].ChangePercent, //TODO
-				"@EconomicCalendarAndNewsBot"}
+			if time.Now().Weekday() == 6 {
+				values = []interface{}{
+					formattedYesterday,
+					response.Historical[0].Close,
+					response.Historical[0].Open,
+					response.Historical[0].High,
+					response.Historical[0].Low,
+					response.Historical[0].Volume,
+					0, //response.Historical[1].ChangePercent, //TODO
+					"@EconomicCalendarAndNewsBot"}
+			} else {
+				values = []interface{}{
+					formattedYesterday,
+					response.Historical[1].Close,
+					response.Historical[1].Open,
+					response.Historical[1].High,
+					response.Historical[1].Low,
+					response.Historical[1].Volume,
+					0, //response.Historical[1].ChangePercent, //TODO
+					"@EconomicCalendarAndNewsBot"}
+			}
 
 			valueRange := &sheets.ValueRange{
 				Range:  writeRange,
