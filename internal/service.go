@@ -145,12 +145,12 @@ func (s service) PrepareXauMessage(short float64, long float64) string {
 	return emoji.Butter.String() + " XAUUSD " + time.Now().Weekday().String() + " statistics: \n\n" +
 		emoji.GreenCircle.String() + " LONG " + strconv.FormatFloat(long, 'f', -1, 32) + "% \n\n" +
 		emoji.RedCircle.String() + " SHORT " + strconv.FormatFloat(short, 'f', -1, 32) + "% \n\n" +
-		"Last update: " + time.Now().String()
+		"Last update: " + time.Now().String() + " Day: " + strconv.Itoa(int(time.Now().Weekday()))
 }
 
 func (s service) PrepareXauUpdateMessage() string {
 	return emoji.Butter.String() + "XAUUSD DAILY FILE UPDATED :) \n\n" +
-		"Last update: " + time.Now().String()
+		"Last update: " + time.Now().String() + " Day: " + strconv.Itoa(int(time.Now().Weekday()))
 }
 
 func (s service) PrepareEconomicCalendarForNextDayMessage(tomorrowDate time.Time, events []entity.CalendarEvent) string {
