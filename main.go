@@ -21,7 +21,7 @@ func main() {
 		log.Fatalf("could not decode config %s\n", err.Error())
 	}
 
-	recipients, err := conf.LoadRecipients()
+	recipients, err := conf.LoadRecipients(cfg.RecipientsFile)
 	if err != nil {
 		log.Fatalf("could not decode recipients %s\n", err.Error())
 	}
@@ -57,8 +57,7 @@ func main() {
 	scheduler := internal.NewService(cfg)
 	scheduler.Readyz(recipients)
 	//CALENDAR NEWS SCHEDULER
-	//TODO API NOT VALID ANYMORE - FIND ANOTHER FREE SERVICE
-	//scheduler.ScheduledNewsNotification(recipients)
+	scheduler.ScheduledNewsNotification(recipients)
 
 	//XAU SCHEDULER
 	scheduler.ScheduledXauNotification(recipients, cfg.SpreadsheetId, cfg.ReadRange, sheetsService)

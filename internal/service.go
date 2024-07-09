@@ -205,7 +205,9 @@ func (s service) ScheduledNewsNotification(recipients []telegram.Recipient) {
 	var message string
 	s1 := gocron.NewScheduler(time.UTC)
 	_, err := s1.Every(1).Day().At("22:00").Do(func() {
-		// Add 1 day to the current date to get tomorrow's date
+		//TODO API NOT VALID ANYMORE - FIND ANOTHER FREE SERVICE
+
+		/* Add 1 day to the current date to get tomorrow's date
 		tomorrowDate := time.Now().AddDate(0, 0, 1)
 
 		events, err := s.GetEconomicCalendarForNextDay(tomorrowDate)
@@ -234,7 +236,11 @@ func (s service) ScheduledNewsNotification(recipients []telegram.Recipient) {
 			}
 		}
 
-		message = s.PrepareEconomicCalendarForNextDayMessage(tomorrowDate, eventsFiltered)
+		message = s.PrepareEconomicCalendarForNextDayMessage(tomorrowDate, eventsFiltered)*/
+
+		message = "Economic Calendar -> Special Endpoint : This endpoint is not available under your current subscription " +
+			"please visit our subscription page to upgrade your plan " +
+			"at https://site.financialmodelingprep.com/developer/docs/pricing"
 
 		for _, recipient := range recipients {
 			// Send the punchline back to Telegram

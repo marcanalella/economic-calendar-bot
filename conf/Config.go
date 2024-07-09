@@ -10,6 +10,7 @@ import (
 type Config struct {
 	Address                  string `json:"address"`
 	Port                     string `json:"port"`
+	TelegramBotToken         string `json:"telegram_bot_token"`
 	TelegramApiBaseUrl       string `json:"telegram_api_base_url"`
 	TelegramApiSendMessage   string `json:"telegram_api_send_message"`
 	EconomicCalendarUrl      string `json:"economic_calendar_url"`
@@ -20,6 +21,7 @@ type Config struct {
 	ReadRange                string `json:"read_range"`
 	WriteRange               string `json:"write_range"`
 	KeyFile                  string `json:"key_file"`
+	RecipientsFile           string `json:"recipients_file"`
 }
 
 func Load() (Config, error) {
@@ -36,9 +38,9 @@ func Load() (Config, error) {
 	return config, err
 }
 
-func LoadRecipients() ([]telegram.Recipient, error) {
+func LoadRecipients(pathFile string) ([]telegram.Recipient, error) {
 	var arr []telegram.Recipient
-	recipientsFile, err := os.Open("recipients.json")
+	recipientsFile, err := os.Open(pathFile)
 	defer func(configFile *os.File) {
 		err := configFile.Close()
 		if err != nil {
