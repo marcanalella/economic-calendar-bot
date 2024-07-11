@@ -1,24 +1,16 @@
-FROM golang:1.22.4
-
-# Set necessary environmet variables needed for our image
+FROM golang:1.22.4 as build
 ENV GO111MODULE=on \
     CGO_ENABLED=0 \
     GOOS=linux \
     GOARCH=amd64
-
-# Move to working directory /build
 WORKDIR /build
-
-# Copy and download dependency using go mod
-COPY go.mod .
-COPY go.sum .
+COPY go.mod go.sum ./
 RUN go mod download
-
-# Copy the code into the container
 COPY . .
-
-# Build the application
 RUN go build -o main .
 
-# Command to run when starting the container
-CMD ["/build/main"]
+FROM alpine:latest
+WORKDIR /app
+COPY config.json recipients.json key.json ./
+COPY --from=build /build/main .
+CMD ["/app/main"]
