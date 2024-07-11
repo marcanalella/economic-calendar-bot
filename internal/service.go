@@ -267,7 +267,7 @@ func (s service) ScheduledXauSheetUpdate(recipients []telegram.Recipient, spread
 	writeRange string, sheetId int, url string, sheetService *sheets.Service) {
 	var message string
 	s1 := gocron.NewScheduler(time.UTC)
-	_, err := s1.Every(1).Day().At("00:30").Do(func() {
+	_, err := s1.Every(1).Day().At("22:01").Do(func() {
 		if time.Now().Weekday() != 0 {
 
 			insertRequest := &sheets.Request{
@@ -364,7 +364,7 @@ func (s service) ScheduledXauNotification(
 	spreadsheetId string, readRange string, sheetService *sheets.Service) {
 	var message string
 	s1 := gocron.NewScheduler(time.UTC)
-	_, err := s1.Every(1).Day().At("00:28").Do(func() {
+	_, err := s1.Every(1).Day().At("22:02").Do(func() {
 
 		resp, err := sheetService.Spreadsheets.Values.Get(spreadsheetId, readRange).Do()
 		if err != nil {
