@@ -204,7 +204,7 @@ func GetEmojiSemaphore(impact string) string {
 func (s service) ScheduledNewsNotification(recipients []telegram.Recipient) {
 	var message string
 	s1 := gocron.NewScheduler(time.UTC)
-	_, err := s1.Every(1).Day().At("22:00").Do(func() {
+	_, err := s1.Every(1).Day().At("00:01").Do(func() {
 		//TODO API NOT VALID ANYMORE - FIND ANOTHER FREE SERVICE
 
 		/* Add 1 day to the current date to get tomorrow's date
@@ -267,7 +267,7 @@ func (s service) ScheduledXauSheetUpdate(recipients []telegram.Recipient, spread
 	writeRange string, sheetId int, url string, sheetService *sheets.Service) {
 	var message string
 	s1 := gocron.NewScheduler(time.UTC)
-	_, err := s1.Every(1).Day().At("22:01").Do(func() {
+	_, err := s1.Every(1).Day().At("00:02").Do(func() {
 		if time.Now().Weekday() != 0 {
 
 			insertRequest := &sheets.Request{
@@ -364,7 +364,7 @@ func (s service) ScheduledXauNotification(
 	spreadsheetId string, readRange string, sheetService *sheets.Service) {
 	var message string
 	s1 := gocron.NewScheduler(time.UTC)
-	_, err := s1.Every(1).Day().At("22:02").Do(func() {
+	_, err := s1.Every(1).Day().At("00:03'").Do(func() {
 
 		resp, err := sheetService.Spreadsheets.Values.Get(spreadsheetId, readRange).Do()
 		if err != nil {
@@ -440,7 +440,7 @@ func (s service) ScheduledXauNotification(
 func (s service) Readyz(recipients []telegram.Recipient) {
 	var message string
 	s2 := gocron.NewScheduler(time.UTC)
-	_, err := s2.Every(1).Day().At("21:59").Do(func() {
+	_, err := s2.Every(1).Day().At("23:59").Do(func() {
 		message = "EconomicCalendarAndNewsBot Running " + emoji.BeamingFaceWithSmilingEyes.String()
 		for _, recipient := range recipients {
 			// Send the punchline back to Telegram
