@@ -111,7 +111,7 @@ func (s service) SendTextToTelegramChat(chatId int, messageThreadId int, text st
 
 	log.Printf("Sending %s to chat_id: %d", text, chatId)
 	response, err := http.PostForm(
-		s.config.TelegramApiBaseUrl+s.config.TelegramApiSendMessage,
+		s.config.TelegramApiBaseUrl+s.config.TelegramBotToken+s.config.TelegramApiSendMessage,
 		url.Values{
 			"chat_id":           {strconv.Itoa(chatId)},
 			"message_thread_id": {strconv.Itoa(messageThreadId)},
@@ -268,7 +268,8 @@ func (s service) ScheduledXauSheetUpdate(recipients []telegram.Recipient, spread
 	var message string
 	s1 := gocron.NewScheduler(time.UTC)
 	_, err := s1.Every(1).Day().At("00:03").Do(func() {
-		if time.Now().Weekday() != 0 {
+		//No update on sunday and monday
+		if time.Now().Weekday() != 0 && time.Now().Weekday() != 1 {
 
 			insertRequest := &sheets.Request{
 				InsertDimension: &sheets.InsertDimensionRequest{
