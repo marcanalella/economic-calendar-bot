@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 func RegisterHandlers(router *mux.Router, service Service) {
@@ -25,12 +26,10 @@ func HandleTelegramWebHook(service Service) func(w http.ResponseWriter, r *http.
 			return
 		}
 
-		//TODO: only user con il permesso :(
-
 		command := getCommand(update.Message.Text)
 		switch command {
-		case 0:
-			message = service.PrepareCommandNotFoundMessageToTelegramChat()
+		case 1:
+			message = service.PrepareStartMessageToTelegramChat()
 			log.Printf("send to chatId, %s", strconv.Itoa(update.Message.Chat.Id))
 			telegramResponseBody, err := service.SendTextToTelegramChat(update.Message.Chat.Id, 0, message)
 			if err != nil {
@@ -39,8 +38,8 @@ func HandleTelegramWebHook(service Service) func(w http.ResponseWriter, r *http.
 				log.Printf("turbine infos %s successfully distributed to chat id %d", siteInfo, update.Message.Chat.Id)
 			}
 			return
-		case 1:
-			message = service.PrepareStartMessageToTelegramChat()
+		default:
+			message = service.PrepareCommandNotFoundMessageToTelegramChat()
 			log.Printf("send to chatId, %s", strconv.Itoa(update.Message.Chat.Id))
 			telegramResponseBody, err := service.SendTextToTelegramChat(update.Message.Chat.Id, 0, message)
 			if err != nil {
@@ -54,10 +53,9 @@ func HandleTelegramWebHook(service Service) func(w http.ResponseWriter, r *http.
 }
 
 func getCommand(command string) int {
-	switch command {
-	case "/start":
+	if strings.Contains(command, "/start") {
 		return 1
-	default:
-		return 0
 	}
+
+	return 0
 }
